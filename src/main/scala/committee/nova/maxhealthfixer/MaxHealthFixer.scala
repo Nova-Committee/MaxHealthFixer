@@ -9,9 +9,10 @@ import net.minecraftforge.fml.common.gameevent.TickEvent.{Phase, WorldTickEvent}
 import net.minecraftforge.fml.common.{FMLCommonHandler, Mod}
 import net.minecraftforge.fml.relauncher.Side
 
+import scala.collection.JavaConversions.asJavaIterator
 import scala.collection.mutable
 
-@Mod(modid = "maxhealthfixer", useMetadata = true, modLanguage = "scala")
+@Mod(modid = "maxhealthfixer", useMetadata = true, modLanguage = "scala", acceptableRemoteVersions = "*")
 object MaxHealthFixer {
   val set = new mutable.HashSet[EntityPlayerMP]()
   final val prevHealth = "prevHealth"
@@ -39,15 +40,19 @@ object MaxHealthFixer {
     @SubscribeEvent
     def onWorldTick(e: WorldTickEvent): Unit = {
       if (e.phase == Phase.START || set.isEmpty) return
-      set.foreach(p => {
+      val itr = set.iterator
+      while (itr.hasNext) {
+        val p = itr.next
+        itr.remove()
         val data = p.getEntityData
         if (data.hasKey(prevHealth)) {
           val stored = data.getFloat(prevHealth)
           data.removeTag(prevHealth)
           val current = p.getHealth
           if (stored > current) p.setHealth(stored min p.getMaxHealth)
+          set.remove(p)
         }
-      })
+      }
     }
   }
 }
